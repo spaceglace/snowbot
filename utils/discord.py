@@ -50,16 +50,23 @@ class Discord:
             }
         })
 
-    async def _Request(self, path, method):
+    async def _Request(self, path, method, content=None):
         print("Enter Discord.Request({0})".format(path))
 
         headers = {'Authorization': 'Bot {0}'.format(self.token)}
 
-        async with method('https://discordapp.com/api/v6' + path, headers=headers) as response:
+        async with method('https://discordapp.com/api/v6' + path, headers=headers, json=content) as response:
             if response.status == 200:
                 return await response.json()
             else:
                 print("Bad response: {0}".format(response))
+
+    async def Say(self, channel, message):
+        await self._Request(
+            "/channels/{0}/messages".format(channel), 
+            self.session.post, 
+            {'content': message}
+        )
 
     async def _Heartbeat(self):
         #print("Sending heartbeat, seq={0}".format(self.last_seq))
@@ -102,7 +109,7 @@ class Discord:
                     self.last_seq = data['s']
 
                     if data['t'] in env.handlers:
-                        asyncio.ensure_future(env.handlers[data['t']].run(data['d']))
+                        asyncio.ensure_future(env.handlers[data['t']].run(self, data['d']))
                     else:
                         print("Unknown event: {0}".format(data['t']))
 

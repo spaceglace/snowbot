@@ -3,7 +3,8 @@ loader = None
 discord = None
 logger = None
 
-# Variables for discord connection state
-shutdown = False
-
+# Dynamically loaded handlers/utilities
 handlers = {}
+
+# Tracking information on our connections
+guilds = {}
