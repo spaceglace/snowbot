@@ -62,7 +62,7 @@ class Discord:
                 print("Bad response: {0}".format(response))
 
     async def _Heartbeat(self):
-        print("Sending heartbeat, seq={0}".format(self.last_seq))
+        #print("Sending heartbeat, seq={0}".format(self.last_seq))
 
         await self.queue.put({
             "op": constants.OPCODE_HEARTBEAT,
@@ -81,7 +81,7 @@ class Discord:
 
         while True:
             data = await self.queue.get()
-            print("Sending message...")
+            #print("Sending message...")
             await self.socket.send_json(data)
 
     async def _Listen(self):
@@ -91,13 +91,20 @@ class Discord:
             message = await self.socket.receive()
 
             if message.tp == aiohttp.WSMsgType.TEXT:
-                print("Got a message: {0}".format(message.data))
+                #print("Got a message: {0}".format(message.data))
 
                 data = json.loads(message.data)
 
-                if data['op'] == constants.OPCODE_DISPATCH:
+                if 'op' not in data:
+                    print("Unknown message: {0}".format(data))
+
+                elif data['op'] == constants.OPCODE_DISPATCH:
                     self.last_seq = data['s']
-                    print('Opcode0: {0} event'.format(data['t']))
+
+                    if data['t'] in env.handlers:
+                        asyncio.ensure_future(env.handlers[data['t']].run(data['d']))
+                    else:
+                        print("Unknown event: {0}".format(data['t']))
 
                 elif data['op'] == constants.OPCODE_HEARTBEAT:
                     print('heartbeat')
@@ -120,7 +127,14 @@ class Discord:
                     await self._SendIdentifyString()
 
                 elif data['op'] == constants.OPCODE_HEARTBEAT_ACK:
-                    print('heartbeat ack')
+                    continue
+                #    print('heartbeat ack')
+
+                else:
+                    print("Unknown opcode: {0}".format(data))
+
+            elif message.tp == aiohttp.WSMsgType.CLOSE:
+                print('Socket being closed')
 
             elif message.tp == aiohttp.WSMsgType.CLOSED:
                 print('Socket closed')

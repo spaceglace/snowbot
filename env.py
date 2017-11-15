@@ -5,3 +5,5 @@ logger = None
 
 # Variables for discord connection state
 shutdown = False
+
+handlers = {}
